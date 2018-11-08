@@ -1,0 +1,326 @@
+---
+title: "Assignment 4"
+author: "Hoshang Charania"
+date: "11/4/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read the dataset
+
+```{r cars}
+data = read.csv("stock_price.csv")
+```
+
+## Visualizing the Principal Components of Stocks
+1) Use PCA to reduce the dimension of stock-price information. Generate a screenplot and determine the number of principal components based on this plot. Plot the loadings of the first principal component.
+```{r}
+pca_stocks=prcomp(data, scale=TRUE)
+plot(pca_stocks,main="Stocks Principal Component Analysis") ## same as screeplot(pcafood)
+mtext(side=1, "Stocks Principal Components",  line=1, font=2)
+stocks = predict(pca_stocks)
+```
+
+## loadings for first Principal Component
+
+```{r}
+plot(pca_stocks$rotation[,1],type='l', main = "The loadings for first principal component")
+```
+2) Generate scatter plots for principal component 1 and principal component 2
+## Principal Component 1 vs Principal Component 2
+
+```{r}
+library(caret)
+loadings=as.vector(pca_stocks[2]$rotation[,c("PC1")])
+stocks=predict(pca_stocks)
+stocks=as.data.frame.matrix(stocks)
+library(car) 
+plot(stocks[,c("PC1","PC2")], xlab="Principal Component 1", ylab="Principal Component 2", main="PC1 vs PC2")
+```
+3) Generate an MDS plot:
+
+## Taking the distance matrix and standardizing the data.
+
+```{r}
+labels=seq(1, 127, by=1)
+new_data=stocks[,c("PC1","PC2")];
+data.dist=dist(stocks)
+data.mds <- cmdscale(data.dist)
+plot(data.mds, type = 'n')
+text(data.mds)
+```
+
+```{r}
+biplot(pca_stocks)
+```
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(pca_stocks$x[,1],xlab="index",ylab="PC1",main="Principal Component 1")
+plot(pca_stocks$x[,2],xlab="index",ylab="PC2",main="Principal Component 2")
+plot(pca_stocks$x[,3],xlab="index",ylab="PC3",main="Principal Component 3")
+plot(pca_stocks$x[,4],xlab="index",ylab="PC4",main="Principal Component 4")
+```
+## Creating functions for Kmeans Clustering, Hierarchial Clustering
+
+```{r}
+#
+# 
+#
+#
+library("ape")
+library("zoom")
+do.kmeans <- function(data,labels,k=3,do.scatter=F) {
+  heading=paste(c("K-means with Clusters", k), collapse = " ")
+  print(heading)
+  set.seed(123)
+  data.clu = kmeans(data, centers=k, nstart=10)
+  if (do.scatter) {
+    plot(dataset,type='n')
+    text(dataset,labels=labels,col=rainbow(k)[data.clu$cluster])    
+  }
+  print(data.clu)
+  data.clu
+}
+
+do.hclust <- function(data, methodName ='single',labels,k=3,do.dendrogram=F) {
+  heading=paste(c("Hierarchial Clustering with", k," Clusters and Method name",methodName), collapse = " ")
+  print(heading)
+  data.dist = dist(data)  
+  hc = hclust(data.dist,method= methodName) 
+  colors = c("red", "blue", "green")
+  clus = cutree(hc, 3)
+  if(k==2){
+  colors = c("red", "blue")
+  clus = cutree(hc, 2)
+  } else if(k==6){
+    colors = c("red", "blue", "green","purple", "orange", "green")
+    clus = cutree(hc, 6)
+  }
+  if (do.dendrogram) {
+    layout(matrix(c(1, 1, 1,
+                1, 1, 1,
+                1, 1, 1), nr=3, byrow=T))
+    title=paste(c("Dendogram with", k,"Clusters and method is", methodName), collapse = " ")
+    plot(as.phylo(hc), type = "fan",main=title, tip.color = colors[clus],label.offset = 1, cex = 0.9)
+    #zm();
+  }
+  hc1 = cutree(hc,k)
+  print(hc1)
+  hc1
+}
+
+do.mdsplot <- function(data,labels,clusters,methodName,clusteredlabels){
+  title=paste(c(methodName,"Clustering with", clusters," Cluster/Clusters"), collapse = " ")
+  plot(data, type = "n",ylim=c(-10,150),main=title)
+  text(data[,1], labels, col = rainbow(clusters)[clusteredlabels])
+}
+
+```
+4) Use different clustering algorithms and generate 8 MDS plots.
+
+```{r}
+clu3_kmeans = do.kmeans(data, labels, k = 3)$cluster
+clu6_kmeans = do.kmeans(data, labels, k = 6)$cluster
+do.mdsplot(data=data.mds,labels = labels,clusters=3,methodName = "Kmeans",clusteredlabels = clu3_kmeans)
+do.mdsplot(data=data.mds,labels = labels,clusters=6,methodName = "Kmeans",clusteredlabels = clu6_kmeans)
+```
+
+
+```{r}
+clu3_hclust_single = do.hclust(data.mds, methodName = "single",labels, k = 3, do.dendrogram = T)
+clu6_hclust_single = do.hclust(data.mds, methodName = "single",labels, k = 6, do.dendrogram = T)
+clu3_hclust_complete = do.hclust(data.mds, methodName = "complete",labels, k = 3, do.dendrogram = T)
+clu6_hclust_complete = do.hclust(data.mds, methodName = "complete",labels, k = 6, do.dendrogram = T)
+clu3_hclust_average = do.hclust(data.mds, methodName = "average",labels, k = 3, do.dendrogram = T)
+clu6_hclust_average = do.hclust(data.mds, methodName = "average",labels, k = 6, do.dendrogram = T)
+```
+
+
+```{r}
+do.mdsplot(data=data.mds,labels = labels,clusters=3,methodName = "HClust-single",clusteredlabels = clu3_hclust_single)
+do.mdsplot(data=data.mds,labels = labels,clusters=6,methodName = "HClust-single",clusteredlabels = clu6_hclust_single)
+do.mdsplot(data=data.mds,labels = labels,clusters=3,methodName = "HClust-complete" ,clusteredlabels = clu3_hclust_complete)
+do.mdsplot(data=data.mds,labels = labels,clusters=6,methodName = "HClust-complete" ,clusteredlabels = clu6_hclust_complete)
+do.mdsplot(data=data.mds,labels = labels,clusters=3,methodName = "HClust-average" ,clusteredlabels = clu3_hclust_average)
+do.mdsplot(data=data.mds,labels = labels,clusters=6,methodName = "HClust-average" ,clusteredlabels = clu6_hclust_average)
+```
+# Senator Data
+
+```{r}
+library("foreign")
+raw_data=read.dta("sen113kh.dta")
+data=read.dta("sen113kh.dta")
+data=data[,10:length(colnames(data))]
+```
+
+```{r}
+#sen_data=prcomp(data, scale=TRUE)
+#plot(sen_data,main="113th Congress Data") ## same as screeplot(pcafood)
+#mtext(side=1, "Principal Components",  line=1, font=2)
+```
+```{r}
+new_data=data$x[,1:2]
+data.dist=dist(data)
+data.mds <- cmdscale(data.dist)
+do.mdsplot(data=data.mds,labels = labels,clusters=2,methodName = "Democrats and Republicans",clusteredlabels = as.matrix(raw_data["party"]/100))
+```
+```{r}
+clu2_hclust_single = do.hclust(data.mds, methodName = "single",labels, k = 2, do.dendrogram = T)
+clu2_hclust_complete = do.hclust(data.mds, methodName = "complete",labels, k = 2, do.dendrogram = T)
+clu2_hclust_average = do.hclust(data.mds, methodName = "average",labels, k = 2, do.dendrogram = T)
+clu2_kmeans=do.kmeans(data.mds, labels, k = 2)$cluster
+```
+Task 2: Analyze US Senator Roll Call Data. The objective is to identify and visualize the clustering patterns of senators voting activities.
+
+```{r}
+do.mdsplot(data=data.mds,labels = labels,clusters=2,methodName = "HClust-single",clusteredlabels = clu2_hclust_single)
+do.mdsplot(data=data.mds,labels = labels,clusters=2,methodName = "HClust-complete" ,clusteredlabels = clu2_hclust_complete)
+do.mdsplot(data=data.mds,labels = labels,clusters=2,methodName = "HClust-average" ,clusteredlabels = clu2_hclust_average)
+do.mdsplot(data=data.mds,labels = labels,clusters=2,methodName = "Kmeans",clusteredlabels = clu2_kmeans)
+```
+2) Use k-means and hierarchial clustering to group the senators and color the senators on the MDS plots based on the clustering results.
+
+```{r}
+raw_data$cluster_kmeans=clu2_kmeans
+raw_data$cluster_hclust_single=clu2_hclust_single
+raw_data$cluster_hclust_complete=clu2_hclust_complete
+raw_data$cluster_hclust_average=clu2_hclust_average
+```
+
+```{r}
+do.check <- function(party,cluster,clusterMethod="cluster_kmeans"){
+  TP=0;
+  TN=0;
+  FP=0;
+  FN=0;
+  n=nrow(raw_data);
+  for(x in 1:n){
+    if(raw_data[x,clusterMethod]==cluster && raw_data[x,"party"]==party){
+      TP=TP+1;
+    }
+    else if(raw_data[x,clusterMethod]!=cluster && raw_data[x,"party"]!=party){
+      TN=TN+1;
+    }
+    else if(raw_data[x,clusterMethod]==cluster && raw_data[x,"party"]!=party){
+      FP=FP+1;
+      print("Democrat conidered as a republican on index")
+      print(x)
+    }
+    else{
+      FN=FN+1;
+      print("Republican conidered as a democrat on index")
+      print(x)
+    }
+  }
+  val=c(TP,TN,FP,FN)
+  return(val)
+}
+```
+
+3) compare the clustering results with the party labels and identify the party members who are assigned to a seemly wrong cluster.
+
+```{r}
+#raw_data[c("cluster_kmeans","party")]
+#cluster_kmeans=raw_data["cluster_kmeans"];
+do.confusionMatrix <-  function(cluster="cluster_kmeans"){
+n=nrow(raw_data["party"]);
+counter=0;
+for(x in 1:n){
+  #print(x)
+  #print(raw_data[x,cluster]);
+  #print(raw_data[x,"party"]);
+  if(raw_data[x,cluster]==1 && raw_data[x,"party"]==100){
+      counter=counter+1;
+  }
+  else{
+    counter=counter-1;
+  }
+}
+if(counter>=0){
+    print("100 is Cluster 1")
+    conf_mat=do.check("100","1",clusterMethod=cluster)
+  } else{
+    print("100 is Cluster 2");
+    conf_mat=do.check("100","2",clusterMethod=cluster)
+  }
+  return(conf_mat)
+}
+```
+
+## TP TN FP FN
+
+```{r}
+conf_mat_kmeans=do.confusionMatrix("cluster_kmeans")
+conf_mat_kmeans
+conf_hclust_single=do.confusionMatrix("cluster_hclust_single")
+conf_hclust_single
+conf_hclust_complete=do.confusionMatrix("cluster_hclust_complete")
+conf_hclust_complete
+conf_hclust_average=do.confusionMatrix("cluster_hclust_average")
+conf_hclust_average
+```
+## By the above observations we can see, the below observations, persist.
+
+[1] Republican conidered as a democrat on index - 1
+[2] Democrat conidered as a republican on index - 38
+[3] Democrat conidered as a republican on index - 39
+[4] Democrat conidered as a republican on index - 65
+[5] Democrat conidered as a republican on index - 95
+
+4) Compute the purity and entropy for these clustering results with respect to the senators party label. You will generate a 2x4 table as follows:
+
+
+```{r}
+cluster.purity <- function(clusters, classes) {
+ sum(apply(table(classes, clusters), 2, max)) /
+length(clusters)
+}
+cluster.entropy <- function(clusters,classes) {
+ en <- function(x) {
+ s = sum(x)
+ sum(sapply(x/s, function(p) {if (p) -p*log2(p)
+else 0} ) )
+ }
+ M = table(classes, clusters)
+ m = apply(M, 2, en)
+ c = colSums(M) / sum(M)
+ sum(m*c)
+}
+
+```
+
+```{r}
+kmeans_purity=cluster.purity(as.matrix(raw_data["cluster_kmeans"]),as.matrix(raw_data["party"]))
+kmeans_entropy=cluster.entropy(as.matrix(raw_data["cluster_kmeans"]),as.matrix(raw_data["party"]))
+kmeans=c(kmeans_purity,kmeans_entropy)
+hclust_single_purity=cluster.purity(as.matrix(raw_data["cluster_hclust_single"]),as.matrix(raw_data["party"]))
+hclust_single_entropy=cluster.entropy(as.matrix(raw_data["cluster_hclust_single"]),as.matrix(raw_data["party"]))
+hclust_single=c(hclust_single_purity,hclust_single_entropy)
+hclust_complete_purity=cluster.purity(as.matrix(raw_data["cluster_hclust_complete"]),as.matrix(raw_data["party"]))
+hclust_complete_entropy=cluster.entropy(as.matrix(raw_data["cluster_hclust_complete"]),as.matrix(raw_data["party"]))
+hclust_complete=c(hclust_complete_purity,hclust_complete_entropy)
+hclust_average_purity=cluster.purity(as.matrix(raw_data["cluster_hclust_average"]),as.matrix(raw_data["party"]))
+hclust_average_entropy=cluster.entropy(as.matrix(raw_data["cluster_hclust_average"]),as.matrix(raw_data["party"]))
+hclust_average=c(hclust_average_purity,hclust_average_entropy)
+
+```
+
+```{r}
+dF <- data.frame("kmeans"=kmeans,"hclust_single"=hclust_single,"hclust_complete"=hclust_complete,"hclust_average"=hclust_average)
+rownames(dF)= c("purity","entropy")
+dF
+```
+5) Based on your observaton on both measures and mis-classified members, choose two clustering methods that generate the most meaningful results and explain why.
+
+### By looking at the purity and Entropy from all the four methods, we can see that the purity is the most in the kmeans and hierarchial clustering with complte link. Also, the Entropy is the least for these two algorithms. 
+
+### Not only the purity and entropy but we could check that the False positives and false negatives are the least for these two.
+
+
+
+
