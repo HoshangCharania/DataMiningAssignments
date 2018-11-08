@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Read the dataset
 
 ```{r cars}
-data = read.csv("stock_price.csv")
+data = read.csv("data/stock_price.csv")
 ```
 
 ## Visualizing the Principal Components of Stocks
@@ -153,8 +153,8 @@ do.mdsplot(data=data.mds,labels = labels,clusters=6,methodName = "HClust-average
 
 ```{r}
 library("foreign")
-raw_data=read.dta("sen113kh.dta")
-data=read.dta("sen113kh.dta")
+raw_data=read.dta("data/sen113kh.dta")
+data=read.dta("data/sen113kh.dta")
 data=data[,10:length(colnames(data))]
 ```
 
